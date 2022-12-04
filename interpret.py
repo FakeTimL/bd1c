@@ -1,6 +1,7 @@
 with open('script.txt', 'r') as file:
     lines = file.readlines()
 html = ''
+num = 1
 characters = dict()
 counts = dict()
 for line in lines:
@@ -13,7 +14,8 @@ for line in lines:
             case '〔':
                 html += f'<div class="h3 row"><h3><p>{line.strip()}</p></h3></div>\n'
             case '\'':
-                html += f'<div class="stage-direction row"><div class="character column"></div><div class="line column"><p>{line[1:].strip()}</p></div></div>\n'
+                html += f'<div class="stage-direction row"><div class="character column"></div><div class="line column"><p>{line[1:].strip()}</p></div><div class="number column"><p>{num}</p></div></div>\n'
+                num += 1
             case _:
                 character = line.split(':')[0]
                 names = character.split('@')[0].split('、')
@@ -25,7 +27,8 @@ for line in lines:
                 classname = ' '.join(f"c{characters[name]}" for name in names)
                 displayname = character.split('@')[-1]
                 nameclass = 'wide ' if len(displayname)==2 or '、' in displayname else ('gapped ' if len(displayname)==3 else '')
-                html += f'<div class="dialogue row {classname}"><div class="character column"><p class="{nameclass}name">{displayname.replace("、","<br>")}</p></div><div class="line column"><p>{"：".join(line.split(":")[1:])}</p></div></div>\n'
+                html += f'<div class="dialogue row {classname}"><div class="character column"><p class="{nameclass}name">{displayname.replace("、","<br>")}</p></div><div class="line column"><p>{"：".join(line.split(":")[1:])}</p></div><div class="number column"><p>{num}</p></div></div>\n'
+                num += 1
 with open('script.html', 'w') as file:
     file.write(html)
 
