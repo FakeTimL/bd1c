@@ -18,12 +18,13 @@
             </div>
         </div>
     </div>
-    <div class="ui right sidebar">
+    <div class="ui very wide right sidebar">
         <div class="ui center aligned segment" id="filter">
-            <div class="ui buttons">
+            <div class="ui mini buttons">
                 <button class="ui button" id="restore" onclick="switchMode(0);">重置</button>
                 <button class="ui button" id="highlight" onclick="switchMode(1);">高亮</button>
-                <button class="ui button" id="filter" onclick="switchMode(2);">筛选</button>
+                <button class="ui button" id="filter" onclick="switchMode(2);">闪现</button>
+                <button class="ui button" id="reveal" onclick="switchMode(3);">筛选</button>
             </div>
             <div class="ui segment container" id="characters">
                 <div class="ui middle aligned animated selection list">
@@ -28355,6 +28356,10 @@
             width: 6em;
         }
 
+        .buttons>.button {
+            font-size: 1.5rem!important;
+        }
+
         p,
         a.toc,
         #menu>.item {
@@ -28384,8 +28389,13 @@
 </style>
 
 <script>
+    const Mode = {
+        Restore: 0,
+        Highlight: 1,
+        Flash: 2,
+        Filter: 3,
+    };
     var mode = 0;
-    var flashing = false;
     var characters = new Array(57).fill(false);
     function activate() {
         $('.ui.sidebar')
@@ -28436,31 +28446,49 @@
         if (next === mode) return;
         let buttons = document.getElementsByTagName('button');
         switch (next) {
-            case 0:
+            case Mode.Restore:
                 Array.from(document.getElementById('characters').getElementsByClassName('item')).forEach((item) => {
                     if (characters[parseInt(item.id.substring(1))])
                         toggle(item);
                 });
-                if (mode == 2) hideAll(false);
+                if (mode === Mode.Filter) hideAll(false);
                 break;
-            case 1:
-                if (mode == 2) {
-                    iterateRows(highlight)
-                    hideAll(false);
+            case Mode.Highlight:
+                switch (mode) {
+                    case Mode.Filter:
+                        hideAll(false);
+                    case Mode.Restore:
+                        iterateRows(highlight);
+                        break;
+                    case Mode.Flash:
+                        iterateRows(unflash);
+                        break;
                 }
-                buttons[1].classList.add('positive');
                 break;
-            case 2:
+            case Mode.Flash:
+                switch (mode) {
+                    case Mode.Filter:
+                        hideAll(false);
+                    case Mode.Restore:
+                        iterateRows(highlight);
+                        break;
+                }
+                iterateRows(flash);
+                break;
+            case Mode.Filter:
                 hideAll(true);
-                if (mode == 1) {
-                    iterateRows(unhighlight);
-                    iterateRows(filter);
+                switch (mode) {
+                    case Mode.Flash:
+                        iterateRows(unflash);
+                    case Mode.Highlight:
+                        iterateRows(unhighlight);
+                        break;
                 }
-                buttons[2].classList.add('positive');
+                iterateRows(filter);
                 break;
         }
-        if (mode == 1) buttons[1].classList.remove('positive');
-        if (mode == 2) buttons[2].classList.remove('positive');
+        if (mode != Mode.Restore) buttons[mode].classList.remove('positive');
+        if (next != Mode.Restore) buttons[next].classList.add('positive');
         mode = next;
     }
     function iterateRows(func) {
@@ -28468,13 +28496,10 @@
         rows.forEach(func);
     }
     function highlight(row) {
-        flashing = false;
         row.classList.add('orange');
-        let line = row.getElementsByClassName('line')[0].getElementsByTagName('p')[0];
-        $(line).dblclick(() => {
-            flashing = !flashing;
-            iterateRows(flashing ? flash : unflash);
-        });
+    }
+    function unhighlight(row) {
+        row.classList.remove('orange');
     }
     function flash(row) {
         let line = row.getElementsByClassName('line')[0].getElementsByTagName('p')[0];
@@ -28489,13 +28514,6 @@
     function unflash(row) {
         let line = row.getElementsByClassName('line')[0].getElementsByTagName('p')[0];
         $(line).css('opacity', 1);
-        $(line).off('mouseover');
-        $(line).off('mouseout');
-    }
-    function unhighlight(row) {
-        unflash(row);
-        row.classList.remove('orange');
-        let line = row.getElementsByClassName('line')[0].getElementsByTagName('p')[0];
         $(line).off();
     }
     function filter(row) {
@@ -28508,17 +28526,35 @@
         document.querySelectorAll('.stage-direction, .dialogue').forEach(hide ? unfilter : filter);
     }
     function toggle(elem) {
-        if (mode == 0) switchMode(1);
+        if (mode == Mode.Restore) switchMode(1);
         let id = elem.id;
         let index = parseInt(id.substring(1));
         var rows = Array.from(document.getElementsByClassName(id));
         characters[index] = !characters[index];
         if (characters[index]) {
             elem.classList.add('active');
-            rows.forEach(mode == 1 ? highlight : filter);
+            switch (mode) {
+                case Mode.Flash:
+                    rows.forEach(flash);
+                case Mode.Highlight:
+                    rows.forEach(highlight);
+                    break;
+                case Mode.Filter:
+                    rows.forEach(filter);
+                    break;
+            }
         } else {
             elem.classList.remove('active');
-            rows.forEach(mode == 1 ? unhighlight : unfilter);
+            switch (mode) {
+                case Mode.Flash:
+                    rows.forEach(unflash);
+                case Mode.Highlight:
+                    rows.forEach(unhighlight);
+                    break;
+                case Mode.Filter:
+                    rows.forEach(unfilter);
+                    break;
+            }
         }
     }
 </script>
