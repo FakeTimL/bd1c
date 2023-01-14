@@ -1,3 +1,5 @@
+from re import sub
+
 with open('script.txt', 'r') as file:
     lines = file.readlines()
 html = ''
@@ -19,11 +21,12 @@ for line in lines:
             case _:
                 character = line.split(':')[0]
                 names = character.split('@')[0].split('、')
+                count = len(sub('[，！？、。「」…“”《》~—\n,.!?’ ]','',sub('（.*?）', '',''.join(line.split(":")[1:]))))
                 for name in names:
                     if name not in characters:
                         characters.update({name: len(characters)})
                         counts.update({name: 0})
-                    counts[name] += 1
+                    counts[name] += count
                 classname = ' '.join(f"c{characters[name]}" for name in names)
                 displayname = character.split('@')[-1]
                 nameclass = 'wide ' if len(displayname)==2 or '、' in displayname else ('gapped ' if len(displayname)==3 else '')
@@ -35,6 +38,6 @@ with open('script.html', 'w') as file:
 items = ''
 for name in sorted(counts, key=counts.get, reverse=True):
     items += f'<div class="item" id="c{characters[name]}" onclick="toggle(this);"><p>{name}</p></div>\n'
-    # print(characters[x], x, counts[x])
+    print(characters[name], name, counts[name])
 with open('characters.html', 'w') as file:
     file.write(items)
