@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+
+<head>
+    <meta charset="utf-8" />
+    <title>宝岛村委会</title>
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://semantic-ui.com/dist/semantic.min.css">
+    <script type="text/javascript" src="https://semantic-ui.com/dist/semantic.min.js"></script>
+</head>
+
+<body>
+    <div id="data">
+        <div contenteditable="true" id="table"></div>
+        <button onclick="interpret();construct();buildUI();update(0,0);">安排</button>
+    </div>
+</body>
+
+<style>
+    #table {
+        border: 1px solid red;
+        width: 500px;
+        height: 300px;
+        overflow-y: auto;
+    }
+
+    input, label {
+        padding: 10px;
+    }
+
+    body, .title {
+        display: flex;
+    }
+
+    .act {
+        display: flex;
+        flex-direction: column;
+        margin-left: 20px;
+        width: 250px;
+    }
+
+    .title {
+        position: relative;
+    }
+
+    .percent {
+        font-weight: bolder;
+        position: absolute;
+        right: 0;
+    }
+
+    .reveal {
+        display: none;
+    }
+
+    .available {
+        color: rgb(0,165,0);
+    }
+
+    .unavailable {
+        color: red;
+    }
+</style>
+
+<script>
+    const date = [];
+    const map = [];
+    const requirement = [
+        ["1.1 发地址牌", {"广播声": 35, "赵嫂": 69, "钱老奶奶": 21, "老赵": 72, "眷管官一": 139, "魏中": 69, "眷管官二": 130, "唐颂人": 11, "周宁": 70}, 616], 
+        ["1.2 入宅", {"赵嫂": 253, "钱老奶奶": 78, "老赵": 208, "魏中": 131, "周宁": 77, "小朱": 185, "朱嫂": 10}, 942], 
+        ["1.3 升旗", {"眷管官一": 42, "老赵": 36, "赵嫂": 13, "钱老奶奶": 0, "小朱": 0, "朱嫂": 0, "周宁": 0, "魏中": 0}, 91], 
+        ["1.4 第一个过年", {"小朱": 304, "朱嫂": 71, "赵嫂": 142, "老赵": 240, "钱老奶奶": 152, "魏中": 120, "周宁": 381, "李子康": 349, "吴将军": 31, "吴夫人": 5, "冷如云": 218}, 2013], 
+        ["1.5 大树下（一）", {"大毛": 164, "老赵": 57, "魏中": 39, "小朱": 32, "周宁": 112, "纪怪": 73, "女人(声音)": 1, "朱嫂": 8}, 486], 
+        ["1.6 学菜", {"朱嫂": 89, "钱老奶奶": 393}, 482], 
+        ["1.7 周家女主人", {"周宁": 280, "赵嫂": 110, "朱嫂": 50, "钱老奶奶": 10, "小朱": 76, "老赵": 21, "冷如云": 17}, 564], 
+        ["1.8 买棺材（一）", {"二毛": 98, "老赵": 144, "小黄": 204, "徒弟": 18}, 464], 
+        ["1.9 葬礼（一）", {"大牛": 52, "小黄": 84, "朱嫂": 50, "徒弟": 4, "老赵": 39, "冷如云": 1, "小朱": 6, "赵嫂": 0, "鹿奶奶": 0, "周宁": 0}, 236], 
+        ["2.1 蒙太奇", {"小毛": 563, "二毛": 205, "大车": 1, "周胖": 1, "大辣": 2, "小辣": 1, "崔太太": 8, "冷如云": 1, "小朱": 165, "张先生": 4, "朱嫂": 174, "大毛": 139, "老赵": 81, "老师一": 19, "老师二": 28, "赵嫂": 0, "周宁": 0, "大牛": 0}, 1392], 
+        ["2.2 大树下（二）", {"周宁": 178, "老赵": 176, "小朱": 284, "纪怪": 57, "鹿奶奶": 15}, 710], 
+        ["2.3 防空洞（一）", {"大毛": 127, "小毛": 426, "大车": 38, "周胖": 43, "二毛": 16, "鹿奶奶": 0}, 650], 
+        ["2.4 21点", {"大牛": 275, "大毛": 137, "小朱": 29, "二毛": 1, "大辣": 0, "小辣": 0}, 442], 
+        ["2.5 偷窥", {"二毛": 60, "大毛": 20, "赵嫂": 354, "朱嫂": 171, "老赵": 45, "大辣": 6, "小辣": 6, "冷如云": 43, "小毛": 86, "大车": 20, "大牛": 40, "周胖": 12, "周宁": 0}, 863], 
+        ["2.6 偷窥处罚", {"赵嫂": 59, "朱嫂": 23, "二毛": 25, "大牛": 2, "大车": 2, "老赵": 60, "小朱": 55, "大毛": 8, "小毛": 12, "周宁": 0, "冷如云": 0, "周胖": 0}, 246], 
+        ["2.7 电影院", {"小毛": 91, "大牛": 137, "售票员": 5, "大车": 5, "二毛": 7, "周胖": 24, "大毛": 136}, 405], 
+        ["2.8 三朵花", {"二毛": 175, "大车": 65, "周宁": 240, "赵嫂": 8}, 488], 
+        ["2.9 期待", {"大毛": 156, "小朱": 82, "大车": 24, "大牛": 80, "朱嫂": 54, "周胖": 71, "二毛": 56, "小毛": 48, "周宁": 172, "老赵": 39, "赵嫂": 22, "冷如云": 22}, 826], 
+        ["2.10 忘词", {"老赵": 69, "赵嫂": 61, "小朱": 54, "朱嫂": 41, "周宁": 36, "冷如云": 40, "大毛": 36, "二毛": 50, "小毛": 89, "大牛": 59, "周胖": 40, "小黄": 4, "主持人": 260, "歌声": 10, "大车": 28, "歌星(声音)": 19, "鹿奶奶": 21}, 917], 
+        ["2.11 留声机事件", {"大毛": 89, "小朱": 102, "宪兵甲": 245, "老赵": 120, "宪兵乙": 17, "赵嫂": 93, "小毛": 6, "纪怪": 12, "大牛": 0}, 684], 
+        ["2.12 防空洞（二）", {"大毛": 141, "大牛": 168}, 309], 
+        ["2.13 两家吵架", {"赵嫂": 351, "大毛": 91, "老赵": 63, "小朱": 30, "大牛": 137, "朱嫂": 173, "周宁": 6, "小毛": 4, "二毛": 0}, 855], 
+        ["2.14 毁约", {"大毛": 114, "大牛": 138}, 252], 
+        ["2.15 蓝天使", {"二毛": 131, "大辣": 30, "小毛": 103, "大车": 23, "周胖": 46, "大毛": 25, "小辣": 0}, 358], 
+        ["2.16 帮佣", {"二毛": 158, "吴夫人": 147, "王夫人": 10, "冷如云": 183, "吴将军": 101, "贵妇们": 5, "嘉光": 73}, 677], 
+        ["2.17 防空洞（三）", {"吴将军": 203, "冷如云": 58, "二毛": 10, "大车": 8}, 279], 
+        ["2.18 生父", {"周胖": 187, "冷如云": 126, "朱嫂": 33}, 346], 
+        ["2.19 鹿港", {"二毛": 164, "大车": 3, "老赵": 6, "赵嫂": 13, "小朱": 6, "朱嫂": 6, "周宁": 6, "小毛": 6, "冷如云": 0, "周胖": 0}, 210], 
+        ["2.20 自制马桶", {"大车": 63, "老赵": 153, "小黄": 45, "纪怪": 33, "二毛": 50, "小朱": 256, "赵嫂": 320, "崔太太": 31, "朱嫂": 0}, 951], 
+        ["2.21 公厕推理", {"老赵": 153, "周宁": 120, "崔太太": 24, "小毛": 38, "二毛": 77, "纪怪": 24, "小黄": 14, "鹿奶奶": 11, "大车": 3, "小朱": 0}, 464], 
+        ["2.22 逮捕", {"小朱": 58, "赵嫂": 78, "二毛": 83, "小毛": 37, "冷如云": 34, "朱嫂": 68, "周宁": 262, "崔太太": 0}, 620], 
+        ["2.23 求援", {"小毛": 71, "鹿奶奶": 15, "二毛": 14}, 100], 
+        ["2.24 平安", {"小毛": 36, "老赵": 102, "朱嫂": 26, "小朱": 19, "崔太太": 17, "周宁": 24, "二毛": 29, "赵嫂": 20, "冷如云": 28}, 301], 
+        ["2.25 该下雨了", {"二毛": 246, "大毛": 48, "大车": 142, "鹿奶奶": 27}, 463], 
+        ["2.26 一个时代结束", {"老赵": 36, "周宁": 11, "小朱": 34, "朱嫂": 4, "赵嫂": 23, "崔太太": 11, "二毛": 0, "小毛": 0, "大车": 0, "冷如云": 0}, 119], 
+        ["3.1 远离宝岛", {"小毛": 202, "小朱": 27, "朱嫂": 37, "路人": 6, "二毛": 175}, 447], 
+        ["3.2 买棺材（二）", {"小毛": 174, "小黄": 164, "徒弟": 0}, 338], 
+        ["3.3 葬礼（二）", {"大毛": 110, "二毛": 0, "小毛": 0, "小朱": 0, "朱嫂": 0, "赵嫂": 0, "小黄": 0}, 110], 
+        ["3.4 探亲", {"大毛": 167, "导游": 65, "小毛": 97, "赵老奶奶": 40, "叔叔": 5, "小朱": 87, "朱嫂": 117, "朱元配": 17, "老大": 3, "周宁姊": 113, "周宁": 155, "周宁外甥": 2}, 868], 
+        ["3.5 大树下（三）", {"二毛": 38, "小朱": 234, "纪怪": 42, "周宁": 214, "大车": 98, "小毛": 34}, 660], 
+        ["3.6 春天的记忆", {"二毛": 60, "小毛": 56, "赵嫂": 131, "朱嫂": 47}, 294], 
+        ["3.7 重逢", {"崔太太": 24, "吴夫人": 21, "周宁": 119, "赵嫂": 118, "吴将军": 188, "朱嫂": 17, "小朱": 52, "李子康": 280, "冷如云": 222, "服务生": 10}, 1051], 
+        ["3.8 Vegas", {"牌客": 23, "大毛": 181, "经理": 16, "大牛": 244, "大牛子": 74}, 538], 
+        ["3.9 再看一眼", {"小朱": 60, "小毛": 549, "朱嫂": 6, "二毛先生": 12, "二毛": 16, "大车": 5, "大车嫂": 7, "大毛": 29, "老赵": 485, "赵嫂": 61, "赵孙": 4, "大辣": 0, "小辣": 0}, 1234], 
+    ];
+    const availability = {};
+    function interpret() {
+        const table = document.getElementsByTagName("tbody")[0];
+        for (let day = 1; day <= 7; day++) {
+            date.push(`${table.rows[0].cells[day].innerText} ${table.rows[1].cells[day].innerText}`);
+        }
+        for (let row = 2; row < table.rows.length; row++) {
+            let name = table.rows[row].cells[0].innerText;
+            let schedule = [];
+            for (let day = 1; day <= 7; day++) {
+                switch (table.rows[row].cells[day].innerText) {
+                    case "": case "0": schedule.push(7); break;
+                    case "x": schedule.push(0); break;
+                    default:
+                        let time = 0;
+                        for (let c of table.rows[row].cells[day].innerText) {
+                            switch (c) {
+                                case "早": time |= 1; break;
+                                case "午": time |= 2; break;
+                                case "晚": time |= 4; break;
+                            }
+                        }
+                        schedule.push(time);
+                        break;
+                }
+            }
+            availability[name] = schedule;
+        }
+        document.getElementById('data').style.display = 'none';
+        console.log(availability);
+    }
+    function construct() {
+        for (let day = 0; day < 7; day++) {
+            let time = [];
+            for (let period = 1; period <= 4; period *= 2) {
+                let scenes = {};
+                for (let scene of requirement) {
+                    let count = 0;
+                    let available = [];
+                    let unavailable = [];
+                    for (let person in scene[1]) {
+                        let weight = [person,`${Math.ceil(scene[1][person]/scene[2]*100)}%`];
+                        if (availability[person][day] & period) {
+                            count += scene[1][person];
+                            available.push(weight);
+                        } else {
+                            unavailable.push(weight);
+                        }
+                    }
+                    available.sort((a, b) => scene[1][b[0]] - scene[1][a[0]]);
+                    unavailable.sort((a, b) => scene[1][b[0]] - scene[1][a[0]]);
+                    scenes[scene[0]] = [Math.floor(count/scene[2]*100), available, unavailable];
+                }
+                // scenes.sort((a, b) => b[1] - a[1]);
+                time.push(scenes);
+            }
+            map.push(time);
+        }
+        console.log(map);
+    }
+    function buildUI() {
+        let head = document.createElement('div');
+        head.className = 'head';
+        let act = 0;
+        var main;
+
+        let days = document.createElement('div');
+        days.className = 'radio-group';
+        for (let day = 0; day < 7; day++) {
+            let dayRadio = document.createElement('input');
+            dayRadio.type = 'radio';
+            dayRadio.name = 'date';
+            dayRadio.id = `day${day}`;
+            dayRadio.value = day;
+            dayRadio.onclick = update;
+            days.appendChild(dayRadio);
+            let dayLabel = document.createElement('label');
+            dayLabel.htmlFor = `day${day}`;
+            dayLabel.innerText = date[day];
+            days.appendChild(dayLabel);
+            let br = document.createElement('br');
+            days.appendChild(br);
+        }
+        head.appendChild(days);
+        head.appendChild(document.createElement('br'));      
+
+        let time = document.createElement('div');
+        time.className = 'radio-group';
+        const period = ['早', '午', '晚'];
+        for (let i = 0; i < 3; i++) {
+            let timeRadio = document.createElement('input');
+            timeRadio.type = 'radio';
+            timeRadio.name = 'time';
+            timeRadio.id = `time${i}`;
+            timeRadio.value = i;
+            timeRadio.onclick = update;
+            time.appendChild(timeRadio);
+            let timeLabel = document.createElement('label');
+            timeLabel.htmlFor = `time${i}`;
+            timeLabel.innerText = period[i];
+            time.appendChild(timeLabel);
+            let br = document.createElement('br');
+            time.appendChild(br);
+        }
+        head.appendChild(time);
+        head.appendChild(document.createElement('br'));     
+
+        let options = document.createElement('div');
+        let order = document.createElement('input');
+        order.type = 'checkbox';
+        order.id = 'order';
+        order.onclick = update;
+        options.appendChild(order);
+        let orderLabel = document.createElement('label');
+        orderLabel.htmlFor = 'order';
+        orderLabel.innerText = '排序';
+        options.appendChild(orderLabel);
+        head.appendChild(options);
+        document.body.appendChild(head);
+
+        for (let scene of requirement) {
+            if (scene[0].charCodeAt(0) != act || scene[0].substring(2,4)=='15') {
+                act = scene[0].charCodeAt(0);
+                main = document.createElement('div');
+                main.className = 'act';
+                document.body.appendChild(main);
+            }
+
+            let block = document.createElement('div');
+            block.className = 'scene';
+            block.id = scene[0];
+            let title = document.createElement('div');
+            title.className = 'title';
+
+            let label = document.createElement('label');
+            label.innerText = scene[0];
+            title.appendChild(label);
+
+            let percent = document.createElement('label');
+            percent.className = 'percent';
+            // percent.innerText = "100%";
+            title.appendChild(percent);
+            block.appendChild(title);
+
+            let content = document.createElement('div');
+            content.className = 'reveal';
+            let available = document.createElement('p');
+            available.className = 'available';
+            let unavailable = document.createElement('p');
+            unavailable.className = 'unavailable';
+            content.appendChild(available);
+            content.appendChild(unavailable);
+            block.appendChild(content);
+            main.appendChild(block);
+
+            title.onclick = function() {
+                content.style.display = content.style.display == 'none' ? 'block' : 'none';
+            }
+        }
+    }
+    function update() {
+        let d = document.querySelector('input[name="date"]:checked').value;
+        let p = document.querySelector('input[name="time"]:checked').value;
+        let o = document.getElementById('order').checked;
+        for (let scene of requirement) {
+            let block = document.getElementById(scene[0]);
+            block.style.order = o? 100-map[d][p][scene[0]][0] : 0;
+            let percent = block.getElementsByClassName('percent')[0];
+            let value = map[d][p][scene[0]][0];
+            percent.innerText = `${value}%`;
+            percent.style.color = value <= 50? `rgb(255,${Math.floor(165*value/50)},0)` : `rgb(${Math.floor(255-255*(value-50)/50)},165,0)`;
+            let available = block.getElementsByClassName('available')[0];
+            let unavailable = block.getElementsByClassName('unavailable')[0];
+            available.innerHTML = map[d][p][scene[0]][1].map(x => x[0]).join(', ');
+            unavailable.innerHTML = map[d][p][scene[0]][2].map(x => x[0]).join(', ');
+        }
+        // scenes[1].style.order = 2;
+    }
+</script>
+
+</html>
